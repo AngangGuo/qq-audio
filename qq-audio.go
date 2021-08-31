@@ -14,7 +14,10 @@ import (
 )
 
 const usage = `
-This program will download audio from https://mp.weixin.qq.com/mp
+This program will download audio from 微信公众平台(https://mp.weixin.qq.com/).
+
+Note: 
+the website link must start with https://mp.weixin.qq.com/mp/audio
 
 Usage:
 1. Open the page with the audio from web browser
@@ -40,7 +43,7 @@ func main() {
 	}
 
 	pageURL = string(content)
-	if !strings.HasPrefix(pageURL, "https://mp.weixin.qq.com/mp/") {
+	if !strings.HasPrefix(pageURL, "https://mp.weixin.qq.com/mp/audio") {
 		fmt.Print(usage)
 		return
 	}
@@ -53,11 +56,12 @@ func main() {
 	browser := rod.New().ControlURL(url).Connect()
 	defer browser.Close()
 
+	// show first 60 characters of the link
 	maxLen := 60
 	if len(pageURL) < maxLen {
 		maxLen = len(pageURL)
 	}
-	fmt.Printf("Go to page %s ...\n", pageURL[:maxLen-1])
+	fmt.Printf("Go to page %s ...\n", pageURL[:maxLen])
 
 	// pageURL := `https://mp.weixin.qq.com/mp/audio?t=pages/audio_detail&scene=1&__biz=MzUxOTEwOTk1OA==&mid=2247484982&idx=1&sn=b8741c3d24ad335f3b6c5a04f175985b&voice_id=MzUxOTEwOTk1OF8yMjQ3NDg0OTc5&_wxindex_=0&uin=MTMyMDk2NDQ0Ng%3D%3D&key=0acde1ff6de13ef41bbc791a74bee0b671ddc512e76725a64df554c17af92fdc7d253de9fed1ac31e3443d1989efa41c5f8857b509d203c843b66cbbb05a933e171c03e3037c7efd22138dd3e5b8cc8e&devicetype=Windows+10+x64&version=62090529&lang=en&ascene=1&pass_ticket=dbjbGtV6MnpzxVPqIOUBOnNbYh34DilvS0pgaeO71sJk%2Frr67n9bv6AJYTkCFaIw`
 	page := browser.Page(pageURL).WindowMinimize()
@@ -66,11 +70,15 @@ func main() {
 
 	fmt.Println("\nChecking the audio file...")
 
-	// play
+	// play the audio so that the audio link will show out at the end of the page
 	page.Timeout(30 * time.Second).Element("#voice_play > em").Click()
-	// time.Sleep(7* time.Second)
-	audioTitle := strings.TrimSpace(page.Element("#voice_frame > strong").Text())
-	audioURL := page.Timeout(30 * time.Second).Element("body > audio").Property("src").String()
+
+	// will use this audio title for filename
+	audioTitle := strings.TrimSpace(page.Timeout(3 * time.Second).Element("#voice_title").Text())
+
+	// while the audio is playing, get the src link
+	//audioURL := page.Timeout(30 * time.Second).Element("body > audio").Property("src").String()
+	audioURL := page.Timeout(30 * time.Second).Element("audio").Property("src").String()
 	fmt.Println("Audio URL:\n", audioURL)
 
 	// stop
